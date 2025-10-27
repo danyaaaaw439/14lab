@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Onesport — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0d1017;
+      --panel:#141826;
+      --panel-2:#171b2b;
+      --card:#1b2033;
+      --muted:#9aa3b2;
+      --text:#e9eef3;
+      --brand:#5b7cff;
+      --brand-2:#7aa2ff;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --radius:16px;
+      --shadow:0 20px 40px rgba(0,0,0,.45);
+      --border:rgba(255,255,255,.06);
+      --overlay:rgba(0,0,0,.55);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--text);
+      font:14px/1.55 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1000px 600px at 20% -10%, #161c2e 0%, transparent 60%),
+        radial-gradient(900px 600px at 120% 20%, #12182b 0%, transparent 60%),
+        var(--bg);
+    }
+    a{color:inherit; text-decoration:none}
+
+    /* ===== Layout ===== */
+    .app{
+      display:grid; grid-template-columns: 260px 1fr; gap:20px; padding:20px; min-height:100dvh;
+    }
+    .topbar{
+      display:none; position:sticky; top:0; z-index:60;
+      padding:12px 16px; background:rgba(13,16,23,.65); backdrop-filter:blur(8px);
+      border-bottom:1px solid var(--border);
+    }
+    .hamb{display:inline-flex; gap:10px; align-items:center; background:#0f1324; border:1px solid var(--border); color:#cfd6e4; padding:8px 12px; border-radius:10px; cursor:pointer}
+    .hamb svg{width:18px;height:18px}
+
+    /* ===== Sidebar ===== */
+    .sidebar{
+      background:linear-gradient(180deg,#121625,#0f1321);
+      border:1px solid var(--border);
+      border-radius:20px; padding:16px 12px; box-shadow:var(--shadow);
+      position:sticky; top:20px; height:calc(100dvh - 40px); overflow:auto; z-index:50;
+      transition:transform .25s ease;
+    }
+    .brand{display:flex; align-items:center; gap:10px; padding:10px 10px 14px 12px}
+    .brand__logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--brand),#9bb4ff); font-weight:800; color:#0b0f1a}
+    .brand__title{font-weight:800; letter-spacing:.3px}
+
+    .group{margin-top:14px}
+    .group__title{padding:12px 12px 8px; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.1em}
+    .menu{display:grid; gap:6px; padding:6px}
+    .menu a{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; color:#cfd6e4; border:1px solid transparent}
+    .menu a:hover{background:#0f1426; border-color:var(--border)}
+    .menu a.is-active{background:linear-gradient(180deg,#1a2241,#141a33); color:#fff; border-color:#2a3760}
+    .i{width:18px;height:18px;opacity:.9}
+    .leagues,.favorites{display:grid; gap:6px; padding:6px}
+    .chip{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background:#0f1423}
+    .chip img{width:18px;height:18px;border-radius:50%}
+    .chip .star{margin-left:auto; width:16px; height:16px; opacity:.7}
+
+    /* ===== Main ===== */
+    .main{display:grid; gap:20px}
+
+    /* Hero */
+    .hero{background:linear-gradient(135deg,#1e2c7b,#2b3fa6 50%, #182045 100%); border-radius:22px;
+      padding:20px; position:relative; overflow:hidden; border:1px solid #37458f}
+    .hero__badge{display:inline-flex; gap:6px; align-items:center; font-size:12px; font-weight:700; color:#0b0f1a; background:#b8c6ff; padding:4px 10px; border-radius:999px}
+    .hero h2{margin:10px 0 8px; font-size:22px; letter-spacing:.2px}
+    .hero__meta{color:#dde3ff; opacity:.85; font-size:12px}
+    .hero__img{position:absolute; right:-40px; bottom:-30px; width:min(460px,45vw); transform:rotate(-4deg);
+      filter:drop-shadow(0 30px 40px rgba(0,0,0,.45)); pointer-events:none; user-select:none}
+    .hero__glow{position:absolute; inset:auto -20% -25% 30%; height:70%; background:radial-gradient(closest-side,rgba(255,255,255,.25),transparent 60%); filter:blur(30px);}
+
+    /* Slider */
+    .slider{
+      position:relative; border-radius:20px; overflow:hidden; border:1px solid var(--border);
+      background:linear-gradient(180deg,#12162a,#0f1323); box-shadow:var(--shadow);
+    }
+    .slides{position:relative; height:360px}
+    .slide{
+      position:absolute; inset:0; opacity:0; transform:scale(1.02);
+      transition:opacity .45s ease, transform .6s ease;
+      background:#0c1224; display:grid; place-items:end;
+    }
+    .slide.is-active{opacity:1; transform:scale(1)}
+    .slide img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:contrast(1.02) saturate(1.05)}
+    .slide__caption{
+      position:relative; z-index:2; margin:18px; padding:12px 14px; border-radius:12px;
+      background:rgba(13,16,23,.65); backdrop-filter:blur(6px); border:1px solid var(--border);
+      max-width:min(680px, 92%); font-weight:700;
+    }
+    .sbtn{
+      position:absolute; top:50%; transform:translateY(-50%);
+      width:40px; height:40px; border-radius:10px; border:1px solid var(--border);
+      background:rgba(15,19,36,.8); color:#fff; display:grid; place-items:center; cursor:pointer;
+    }
+    .sbtn:hover{background:#0e1428}
+    .sbtn--prev{left:12px} .sbtn--next{right:12px}
+    .sdots{position:absolute; left:0; right:0; bottom:10px; display:flex; gap:8px; justify-content:center; z-index:3}
+    .sdot{width:8px; height:8px; border-radius:50%; background:#64748b; opacity:.6; border:1px solid #94a3b8; cursor:pointer}
+    .sdot.is-active{opacity:1; background:#e2e8f0}
+
+    /* Section blocks */
+    .section{background:linear-gradient(180deg,#12162a,#0f1323); border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow)}
+    .section__hd{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; padding:16px 16px 8px 16px}
+    .section__title{font-weight:800; letter-spacing:.2px}
+    .tabs{display:flex; gap:8px; padding:0 12px 12px 12px; flex-wrap:wrap}
+    .tab{height:36px; padding:0 12px; border-radius:10px; border:1px solid var(--border); background:#0e1426; color:var(--muted); font-weight:700; cursor:pointer}
+    .tab.is-active{color:#fff; border-color:#3a4a7a; background:linear-gradient(180deg,#1a2241,#141a33)}
+
+    /* Match list */
+    .matches{padding:6px 12px 14px; display:grid; gap:10px}
+    .match{
+      display:grid; grid-template-columns: 1fr auto; align-items:center;
+      background:linear-gradient(180deg,#171c30,#12182a); border:1px solid var(--border);
+      border-radius:14px; padding:12px;
+    }
+    .match__left{display:flex; align-items:center; gap:12px; min-width:0}
+    .club{display:flex; align-items:center; gap:10px; padding:6px 10px; border-radius:10px; background:#0f1527; border:1px solid var(--border)}
+    .club img{width:22px; height:22px; border-radius:50%}
+    .club span{font-weight:700; white-space:nowrap}
+    .vs{margin:0 8px; color:#94a3b8; font-weight:800}
+    .stats{display:flex; align-items:center; gap:14px; color:#cbd5e1; margin-left:10px}
+    .pill{font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid #334155; background:#0b1223; color:#dbe5ff; font-weight:800}
+
+    /* News */
+    .news{padding:8px 12px 16px}
+    .news__tabs{display:flex; gap:12px; padding:0 4px 12px 4px; flex-wrap:wrap}
+    .ntab{background:transparent; border:none; color:var(--muted); font-weight:800; cursor:pointer}
+    .ntab.is-active{color:#fff}
+    .cards{display:grid; gap:14px; grid-template-columns: repeat(4, 1fr)}
+    .card{
+      display:grid; grid-template-rows:140px auto; gap:10px;
+      background:linear-gradient(180deg,#171b2f,#121729); border:1px solid var(--border);
+      border-radius:16px; overflow:hidden;
+    }
+    .card__img{width:100%; height:100%; object-fit:cover}
+    .cat{color:#c9d1ee; font-size:11px; letter-spacing:.18em; opacity:.85}
+    .card__body{padding:12px}
+    .title{font-weight:800; font-size:14px; line-height:1.35; margin:6px 0 6px}
+    .excerpt{color:#a6b0c2; font-size:12px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+    .divider{height:1px; background:var(--border); margin:16px 0 10px}
+    .dot{display:inline-block; width:6px; height:6px; border-radius:50%; background:#cbd5e1; vertical-align:middle; margin:0 6px}
+
+    /* ===== Responsiveness ===== */
+    /* Narrow desktop: shrink sidebar labels */
+    @media (max-width:1100px){
+      .cards{grid-template-columns: repeat(3, 1fr)}
+    }
+    /* Tablet: compact sidebar to rail */
+    @media (max-width:900px){
+      .app{grid-template-columns: 82px 1fr}
+      .sidebar .txt{display:none}
+      .brand__title{display:none}
+      .cards{grid-template-columns: repeat(2, 1fr)}
+      .slides{height:320px}
+    }
+    /* Mobile: offcanvas sidebar + topbar */
+    @media (max-width:700px){
+      .topbar{display:flex; justify-content:space-between; align-items:center}
+      .app{grid-template-columns: 1fr; padding:14px}
+      .sidebar{
+        position:fixed; top:0; bottom:0; left:0; width:280px; height:100dvh;
+        transform:translateX(-110%); border-radius:0; border-right:1px solid var(--border);
+      }
+      .sidebar.is-open{transform:none}
+      .overlay{position:fixed; inset:0; background:var(--overlay); opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:40}
+      .overlay.is-open{opacity:1; pointer-events:auto}
+      .hero__img{width:min(380px,60vw); right:-60px}
+      .slides{height:260px}
+      .match{grid-template-columns: 1fr}
+      .stats{margin-left:auto}
+      .cards{grid-template-columns: 1fr}
+    }
+    /* Very small phones */
+    @media (max-width:380px){
+      .slides{height:220px}
+      .club span{display:none}
+    }
+  </style>
+</head>
+<body>
+  <!-- Topbar for mobile -->
+  <div class="topbar">
+    <button class="hamb" id="openMenu" type="button">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>Menu</span>
+    </button>
+    <strong>Onesport</strong>
+  </div>
+  <div class="overlay" id="overlay"></div>
+
+  <div class="app">
+    <!-- ===== Sidebar ===== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand__logo">O</div>
+        <div class="brand__title">Onesport</div>
+      </div>
+
+      <div class="group">
+        <div class="group__title">Menu</div>
+        <nav class="menu">
+          <a class="is-active" href="#"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="txt">Dashboard</span></a>
+          <a href="#"><svg class="i" viewBox="0 0 24 24" fill="none"><circle cx="7" cy="12" r="3.5" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="12" r="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 12H13.5" stroke="currentColor" stroke-width="1.6"/></svg><span class="txt">Live Football</span></a>
+          <a href="#"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M4 20V7m5 13V4m5 16V9m5 11V6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="txt">Standings</span></a>
+          <a href="#"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v12H4z" stroke="currentColor" stroke-width="1.6"/><path d="M10 21l4-4H4l4 4z" stroke="currentColor" stroke-width="1.6"/></svg><span class="txt">Highlights</span></a>
+          <a href="#"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M6 6h12l1 12H5L6 6Z" stroke="currentColor" stroke-width="1.6"/><path d="M9 6V4h6v2" stroke="currentColor" stroke-width="1.6"/></svg><span class="txt">Shop</span></a>
+          <a href="#"><svg class="i" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="1.6"/><path d="M8 8h8v8H8z" stroke="currentColor" stroke-width="1.6"/></svg><span class="txt">News</span></a>
+        </nav>
+      </div>
+
+      <div class="group">
+        <div class="group__title">Football League</div>
+        <div class="leagues">
+          <div class="chip"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/7/77/FIFA_World_Cup_2022_logo.svg/48px-FIFA_World_Cup_2022_logo.svg.png" alt=""><span class="txt">Worldcup Qatar 2022</span></div>
+          <div class="chip"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/3/35/UEFA_Champions_League_logo_2.svg/64px-UEFA_Champions_League_logo_2.svg.png" alt=""><span class="txt">Champions League</span></div>
+          <div class="chip"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Premier_League_Logo.svg/64px-Premier_League_Logo.svg.png" alt=""><span class="txt">Premier League</span></div>
+          <div class="chip"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c7/LaLiga_Azul_2023_Horizontal_Logo.svg/64px-LaLiga_Azul_2023_Horizontal_Logo.svg.png" alt=""><span class="txt">La Liga</span></div>
+          <div class="chip"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c3/Ligue1_Uber_Eats_Logo.svg/64px-Ligue1_Uber_Eats_Logo.svg.png" alt=""><span class="txt">Ligue 1</span></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group__title">Favorite Club</div>
+        <div class="favorites">
+          <div class="chip">
+            <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/cc/Chelsea_FC.svg/48px-Chelsea_FC.svg.png" alt="">
+            <span class="txt">Chelsea FC</span>
+            <svg class="star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.3 6.9.6-5.2 4.6 1.6 6.7L12 16.9 5.8 20.2l1.6-6.7L2.2 8.9l6.9-.6L12 2z"/></svg>
+          </div>
+          <div class="chip">
+            <img src="https://upload.wikimedia.org/wikipedia/en/thumb/e/eb/Manchester_City_FC_badge.svg/48px-Manchester_City_FC_badge.svg.png" alt="">
+            <span class="txt">Manchester City</span>
+            <svg class="star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.3 6.9.6-5.2 4.6 1.6 6.7L12 16.9 5.8 20.2l1.6-6.7L2.2 8.9l6.9-.6L12 2z"/></svg>
+          </div>
+          <div class="chip">
+            <img src="https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/FC_Bayern_Munchen_logo_%282017%29.svg/48px-FC_Bayern_Munchen_logo_%282017%29.svg.png" alt="">
+            <span class="txt">Bayern Munchen</span>
+            <svg class="star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.3 6.9.6-5.2 4.6 1.6 6.7L12 16.9 5.8 20.2l1.6-6.7L2.2 8.9l6.9-.6L12 2z"/></svg>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <main class="main">
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero__badge"><span>⚽</span> Football</div>
+        <h2>Liverpool UEFA Champion League Celebration</h2>
+        <div class="hero__meta">Yesterday, 08:30 PM</div>
+        <img class="hero__img" alt="" src="https://images.unsplash.com/photo-1517927033932-b3d18e61fb3a?q=80&w=1400&auto=format&fit=crop" />
+        <div class="hero__glow" aria-hidden="true"></div>
+      </section>
+
+      <!-- Slider (Highlights) -->
+      <section class="slider" aria-label="Highlights slider">
+        <div class="slides" id="slides">
+          <!-- Slide 1 -->
+          <article class="slide is-active">
+            <img src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1600&auto=format&fit=crop" alt="Premier League warm-up">
+            <div class="slide__caption">Premier League — fierce weekend fixtures are back. Don’t miss live coverage and stats.</div>
+          </article>
+          <!-- Slide 2 -->
+          <article class="slide">
+            <img src="https://images.unsplash.com/photo-1522771930-78848d9293e8?q=80&w=1600&auto=format&fit=crop" alt="Top scorer celebration">
+            <div class="slide__caption">Erling Haaland continues to dominate the Golden Boot race with an incredible scoring rate.</div>
+          </article>
+          <!-- Slide 3 -->
+          <article class="slide">
+            <img src="https://images.unsplash.com/photo-1517466787929-bc90951d0974?q=80&w=1600&auto=format&fit=crop" alt="Arsenal match">
+            <div class="slide__caption">Arsenal build momentum as title pressure rises — tactical changes paying off.</div>
+          </article>
+          <!-- Slide 4 -->
+          <article class="slide">
+            <img src="https://images.unsplash.com/photo-1521417531039-94c1e6f7f6cf?q=80&w=1600&auto=format&fit=crop" alt="European night">
+            <div class="slide__caption">European nights return — stadiums under lights and drama guaranteed.</div>
+          </article>
+        </div>
+        <button class="sbtn sbtn--prev" id="prev" aria-label="Предыдущий слайд">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="sbtn sbtn--next" id="next" aria-label="Следующий слайд">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="sdots" id="dots" aria-hidden="false"></div>
+      </section>
+
+      <!-- Matches -->
+      <section class="section">
+        <div class="section__hd">
+          <div class="section__title">⚽ Football Match</div>
+          <div style="color:var(--muted);font-weight:700">Frame</div>
+        </div>
+        <div class="tabs" id="matchTabs">
+          <button class="tab is-active">Latest Match</button>
+          <button class="tab">Coming Match</button>
+          <button class="tab">Pre-season</button>
+          <button class="tab">Live Games</button>
+          <button class="tab">Fun Football</button>
+        </div>
+
+        <div class="matches" id="matches">
+          <article class="match">
+            <div class="match__left">
+              <div class="club"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/48px-FC_Barcelona_%28crest%29.svg.png" alt=""><span>Barcelona</span></div>
+              <span class="vs">vs</span>
+              <div class="club"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/48px-Real_Madrid_CF.svg.png" alt=""><span>Real Madrid</span></div>
+              <div class="stats"><span>2</span><span class="dot"></span><span>3</span><span class="dot"></span><span>0</span></div>
+            </div>
+            <div><span class="pill">HT</span></div>
+          </article>
+
+          <article class="match">
+            <div class="match__left">
+              <div class="club"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/48px-FC_Barcelona_%28crest%29.svg.png" alt=""><span>Barcelona</span></div>
+              <span class="vs">vs</span>
+              <div class="club"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/48px-Real_Madrid_CF.svg.png" alt=""><span>Real Madrid</span></div>
+              <div class="stats"><span>2</span><span class="dot"></span><span>0</span><span class="dot"></span><span>0</span></div>
+            </div>
+            <div><span class="pill">HT</span></div>
+          </article>
+
+          <article class="match">
+            <div class="match__left">
+              <div class="club"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/48px-FC_Barcelona_%28crest%29.svg.png" alt=""><span>Barcelona</span></div>
+              <span class="vs">vs</span>
+              <div class="club"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/48px-Real_Madrid_CF.svg.png" alt=""><span>Real Madrid</span></div>
+              <div class="stats"><span>2</span><span class="dot"></span><span>0</span><span class="dot"></span><span>0</span></div>
+            </div>
+            <div><span class="pill">HT</span></div>
+          </article>
+
+          <article class="match">
+            <div class="match__left">
+              <div class="club"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/48px-FC_Barcelona_%28crest%29.svg.png" alt=""><span>Barcelona</span></div>
+              <span class="vs">vs</span>
+              <div class="club"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/48px-Real_Madrid_CF.svg.png" alt=""><span>Real Madrid</span></div>
+              <div class="stats"><span>2</span><span class="dot"></span><span>0</span><span class="dot"></span><span>0</span></div>
+            </div>
+            <div><span class="pill">HT</span></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- News -->
+      <section class="section">
+        <div class="section__hd">
+          <div class="section__title">📰 News</div>
+          <div style="color:#d5dcf3;font-weight:800">All News and Transfer Today</div>
+        </div>
+        <div class="news">
+          <div class="news__tabs" id="newsTabs">
+            <button class="ntab is-active">All News</button>
+            <button class="ntab">Hot News</button>
+            <button class="ntab">Transfer</button>
+          </div>
+          <div class="divider"></div>
+          <div class="cards">
+            <article class="card">
+              <img class="card__img" src="https://images.unsplash.com/photo-1517466787929-bc90951d0974?q=80&w=1200&auto=format&fit=crop" alt="">
+              <div class="card__body">
+                <div class="cat">PREMIER LEAGUE</div>
+                <h3 class="title">Signs of Arsenal getting stronger in the Premier League</h3>
+                <p class="excerpt">The victory over Wolves provided a comfortable distance for Arsenal and ensured they stay in the title race…</p>
+              </div>
+            </article>
+            <article class="card">
+              <img class="card__img" src="https://images.unsplash.com/photo-1522771930-78848d9293e8?q=80&w=1200&auto=format&fit=crop" alt="">
+              <div class="card__body">
+                <div class="cat">PREMIER LEAGUE</div>
+                <h3 class="title">Erling Haaland leads Premier League Top Scorers 2022</h3>
+                <p class="excerpt">Until the competition back in the 2022 World Cup in Qatar, Haaland continued his scoring form for Manchester City…</p>
+              </div>
+            </article>
+            <article class="card">
+              <img class="card__img" src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1200&auto=format&fit=crop" alt="">
+              <div class="card__body">
+                <div class="cat">PREMIER LEAGUE</div>
+                <h3 class="title">Chelsea were humiliated 1-4 at Brighton headquarters</h3>
+                <p class="excerpt">Chelsea were humiliated by losing with a big score of 1-4 when they visited Brighton, as pressure mounts…</p>
+              </div>
+            </article>
+            <article class="card">
+              <img class="card__img" src="https://images.unsplash.com/photo-1517927033932-b3d18e61fb3a?q=80&w=1200&auto=format&fit=crop" alt="">
+              <div class="card__body">
+                <div class="cat">PREMIER LEAGUE</div>
+                <h3 class="title">Garnacho led Manchester United to beat Fulham</h3>
+                <p class="excerpt">Midfielder Christian Eriksen not only put United ahead in the 14th minute but also orchestrated the late winner…</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ===== Mobile sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const openMenu = document.getElementById('openMenu');
+    function openSide(){ sidebar.classList.add('is-open'); overlay.classList.add('is-open'); document.body.style.overflow='hidden'; }
+    function closeSide(){ sidebar.classList.remove('is-open'); overlay.classList.remove('is-open'); document.body.style.overflow=''; }
+    openMenu?.addEventListener('click', openSide);
+    overlay?.addEventListener('click', closeSide);
+    // Close on ESC
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSide(); });
+
+    // ===== Matches/News tabs (visual only)
+    document.querySelectorAll('#matchTabs .tab').forEach(t=>t.addEventListener('click',()=>{
+      document.querySelectorAll('#matchTabs .tab').forEach(x=>x.classList.remove('is-active'));
+      t.classList.add('is-active');
+    }));
+    document.querySelectorAll('#newsTabs .ntab').forEach(t=>t.addEventListener('click',()=>{
+      document.querySelectorAll('#newsTabs .ntab').forEach(x=>x.classList.remove('is-active'));
+      t.classList.add('is-active');
+    }));
+
+    // ===== Slider (autoplay + controls)
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const prev = document.getElementById('prev');
+    const next = document.getElementById('next');
+    const dotsWrap = document.getElementById('dots');
+    let index = 0, timer = null, AUTOPLAY_MS = 4500;
+
+    // build dots
+    slides.forEach((_, i)=>{
+      const d = document.createElement('button');
+      d.className = 'sdot' + (i===0?' is-active':'');
+      d.setAttribute('aria-label', `Показать слайд ${i+1}`);
+      d.addEventListener('click', ()=> go(i, true));
+      dotsWrap.appendChild(d);
+    });
+    const dots = Array.from(document.querySelectorAll('.sdot'));
+
+    function setActive(i){
+      slides.forEach((s, idx)=> s.classList.toggle('is-active', idx===i));
+      dots.forEach((d, idx)=> d.classList.toggle('is-active', idx===i));
+    }
+    function go(i, user=false){
+      index = (i+slides.length) % slides.length;
+      setActive(index);
+      if(user) restart();
+    }
+    function nextSlide(){ go(index+1); }
+    function prevSlide(){ go(index-1, true); }
+
+    function restart(){
+      clearInterval(timer);
+      timer = setInterval(nextSlide, AUTOPLAY_MS);
+    }
+    prev.addEventListener('click', prevSlide);
+    next.addEventListener('click', ()=> go(index+1, true));
+    // pause on hover (desktop)
+    const slider = document.querySelector('.slider');
+    slider.addEventListener('mouseenter', ()=> clearInterval(timer));
+    slider.addEventListener('mouseleave', restart);
+
+    // start autoplay
+    restart();
+
+    // Accessibility: swipe support for mobile
+    let touchStartX = 0;
+    slider.addEventListener('touchstart', e=>{ touchStartX = e.changedTouches[0].clientX; }, {passive:true});
+    slider.addEventListener('touchend', e=>{
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if(Math.abs(dx) > 40){ dx>0 ? prevSlide() : go(index+1, true); }
+    }, {passive:true});
+  </script>
+</body>
+</html>
